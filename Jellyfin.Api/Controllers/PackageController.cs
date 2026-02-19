@@ -152,11 +152,23 @@ public class PackageController : BaseJellyfinApiController
     /// </summary>
     /// <param name="repositoryInfos">The list of package repositories.</param>
     /// <response code="204">Package repositories saved.</response>
+    /// <response code="400">Repository URL is not valid.</response>
     /// <returns>A <see cref="NoContentResult"/>.</returns>
     [HttpPost("Repositories")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult SetRepositories([FromBody, Required] RepositoryInfo[] repositoryInfos)
     {
+        foreach (var repo in repositoryInfos)
+        {
+            if (repo.Url is not null
+                && (!Uri.TryCreate(repo.Url, UriKind.Absolute, out var uri)
+                    || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)))
+            {
+                return BadRequest($"The repository URL '{repo.Url}' is not valid. Only HTTP and HTTPS URLs are supported.");
+            }
+        }
+
         _serverConfigurationManager.Configuration.PluginRepositories = repositoryInfos;
         _serverConfigurationManager.SaveConfiguration();
         return NoContent();

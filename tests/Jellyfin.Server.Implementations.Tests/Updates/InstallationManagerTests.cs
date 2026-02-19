@@ -106,5 +106,19 @@ namespace Jellyfin.Server.Implementations.Tests.Updates
             var ex = await Record.ExceptionAsync(() => _installationManager.InstallPackage(packageInfo, CancellationToken.None));
             Assert.Null(ex);
         }
+
+        [Theory]
+        [InlineData("ttps://repo.jellyfin.org/files/plugin/manifest.json")]
+        [InlineData("not-a-url")]
+        [InlineData("ftp://repo.jellyfin.org/files/plugin/manifest.json")]
+        public async Task GetPackages_InvalidUrl_ReturnsEmpty(string url)
+        {
+            PackageInfo[] packages = await _installationManager.GetPackages(
+                "Invalid Repo",
+                url,
+                false);
+
+            Assert.Empty(packages);
+        }
     }
 }
