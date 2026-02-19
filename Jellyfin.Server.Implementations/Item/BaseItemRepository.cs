@@ -851,7 +851,7 @@ public sealed class BaseItemRepository
         }
 
         dto.ExtraIds = string.IsNullOrWhiteSpace(entity.ExtraIds) ? [] : entity.ExtraIds.Split('|').Select(e => Guid.Parse(e)).ToArray();
-        dto.ProductionLocations = entity.ProductionLocations?.Split('|') ?? [];
+        dto.ProductionLocations = string.IsNullOrEmpty(entity.ProductionLocations) ? [] : entity.ProductionLocations.Split('|', StringSplitOptions.RemoveEmptyEntries);
         dto.Studios = entity.Studios?.Split('|') ?? [];
         dto.Tags = string.IsNullOrWhiteSpace(entity.Tags) ? [] : entity.Tags.Split('|');
 
@@ -1013,7 +1013,7 @@ public sealed class BaseItemRepository
         }
 
         entity.ExtraIds = dto.ExtraIds is not null ? string.Join('|', dto.ExtraIds) : null;
-        entity.ProductionLocations = dto.ProductionLocations is not null ? string.Join('|', dto.ProductionLocations) : null;
+        entity.ProductionLocations = dto.ProductionLocations is not null && dto.ProductionLocations.Length > 0 ? string.Join('|', dto.ProductionLocations) : null;
         entity.Studios = dto.Studios is not null ? string.Join('|', dto.Studios) : null;
         entity.Tags = dto.Tags is not null ? string.Join('|', dto.Tags) : null;
         entity.LockedFields = dto.LockedFields is not null ? dto.LockedFields
