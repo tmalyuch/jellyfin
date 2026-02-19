@@ -323,7 +323,38 @@ namespace MediaBrowser.Providers.Plugins.Tmdb
             person = await _tmDbClient.GetPersonAsync(
                 personTmdbId,
                 TmdbUtils.NormalizeLanguage(language, countryCode),
-                PersonMethods.TvCredits | PersonMethods.MovieCredits | PersonMethods.Images | PersonMethods.ExternalIds,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (person is not null)
+            {
+                _memoryCache.Set(key, person, TimeSpan.FromHours(CacheDurationInHours));
+            }
+
+            return person;
+        }
+
+        /// <summary>
+        /// Gets the profile images for a person from the TMDb API based on their TMDb id.
+        /// </summary>
+        /// <param name="personTmdbId">The person's TMDb id.</param>
+        /// <param name="language">The requested language.</param>
+        /// <param name="countryCode">The country code, ISO 3166-1.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The TMDb person information with images or null if not found.</returns>
+        public async Task<Person?> GetPersonImagesAsync(int personTmdbId, string language, string? countryCode, CancellationToken cancellationToken)
+        {
+            var key = $"person-images-{personTmdbId.ToString(CultureInfo.InvariantCulture)}-{language}";
+            if (_memoryCache.TryGetValue(key, out Person? person))
+            {
+                return person;
+            }
+
+            await EnsureClientConfigAsync().ConfigureAwait(false);
+
+            person = await _tmDbClient.GetPersonAsync(
+                personTmdbId,
+                TmdbUtils.NormalizeLanguage(language, countryCode),
+                PersonMethods.Images,
                 cancellationToken).ConfigureAwait(false);
 
             if (person is not null)

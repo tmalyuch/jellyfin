@@ -50,13 +50,13 @@ namespace MediaBrowser.Providers.Plugins.Tmdb.People
                         Overview = personResult.Biography
                     };
 
-                    if (personResult.Images?.Profiles is not null && personResult.Images.Profiles.Count > 0)
+                    if (!string.IsNullOrEmpty(personResult.ProfilePath))
                     {
-                        result.ImageUrl = _tmdbClientManager.GetProfileUrl(personResult.Images.Profiles[0].FilePath);
+                        result.ImageUrl = _tmdbClientManager.GetProfileUrl(personResult.ProfilePath);
                     }
 
                     result.SetProviderId(MetadataProvider.Tmdb, personResult.Id.ToString(CultureInfo.InvariantCulture));
-                    result.TrySetProviderId(MetadataProvider.Imdb, personResult.ExternalIds?.ImdbId);
+                    result.TrySetProviderId(MetadataProvider.Imdb, personResult.ImdbId);
 
                     return [result];
                 }
