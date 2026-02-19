@@ -556,11 +556,35 @@ namespace MediaBrowser.Controller.Entities
 
         private async Task RefreshMetadataRecursive(IList<BaseItem> children, MetadataRefreshOptions refreshOptions, bool recursive, IProgress<double> progress, CancellationToken cancellationToken)
         {
-            await RunTasks(
-                (baseItem, innerProgress) => RefreshChildMetadata(baseItem, refreshOptions, recursive && baseItem.IsFolder, innerProgress, cancellationToken),
-                children,
-                progress,
-                cancellationToken).ConfigureAwait(false);
+            var pendingChildren = new Queue<(Folder Parent, IList<BaseItem> Children)>();
+            pendingChildren.Enqueue((this, children));
+
+            while (pendingChildren.Count > 0)
+            {
+                var (parent, currentBatch) = pendingChildren.Dequeue();
+
+                await RunTasks(
+                    (baseItem, innerProgress) => RefreshChildMetadata(baseItem, refreshOptions, false, innerProgress, cancellationToken),
+                    currentBatch,
+                    progress,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (recursive)
+                {
+                    foreach (var child in currentBatch)
+                    {
+                        if (child is Folder folder && child is not IMetadataContainer)
+                        {
+                            folder.Children = null;
+                            var folderChildren = folder.Children.Except([parent, child]).ToList();
+                            if (folderChildren.Count > 0)
+                            {
+                                pendingChildren.Enqueue((folder, folderChildren));
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private async Task RefreshAllMetadataForContainer(IMetadataContainer container, MetadataRefreshOptions refreshOptions, IProgress<double> progress, CancellationToken cancellationToken)
