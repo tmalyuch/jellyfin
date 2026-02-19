@@ -102,7 +102,7 @@ public class BackupService : IBackupService
             }
 
             BackupManifest? manifest;
-            var manifestStream = await zipArchiveEntry.OpenAsync().ConfigureAwait(false);
+            var manifestStream = zipArchiveEntry.Open();
             await using (manifestStream.ConfigureAwait(false))
             {
                 manifest = await JsonSerializer.DeserializeAsync<BackupManifest>(manifestStream, _serializerSettings).ConfigureAwait(false);
@@ -160,7 +160,7 @@ public class BackupService : IBackupService
                     }
 
                     HistoryRow[] historyEntries;
-                    var historyArchive = await historyEntry.OpenAsync().ConfigureAwait(false);
+                    var historyArchive = historyEntry.Open();
                     await using (historyArchive.ConfigureAwait(false))
                     {
                         historyEntries = await JsonSerializer.DeserializeAsync<HistoryRow[]>(historyArchive).ConfigureAwait(false) ??
@@ -204,7 +204,7 @@ public class BackupService : IBackupService
                             continue;
                         }
 
-                        var zipEntryStream = await zipEntry.OpenAsync().ConfigureAwait(false);
+                        var zipEntryStream = zipEntry.Open();
                         await using (zipEntryStream.ConfigureAwait(false))
                         {
                             _logger.LogInformation("Restore backup of {Table}", entityType.Type.Name);
@@ -329,7 +329,7 @@ public class BackupService : IBackupService
                             _logger.LogInformation("Begin backup of entity {Table}", entityType.SourceName);
                             var zipEntry = zipArchive.CreateEntry(NormalizePathSeparator(Path.Combine("Database", $"{entityType.SourceName}.json")));
                             var entities = 0;
-                            var zipEntryStream = await zipEntry.OpenAsync().ConfigureAwait(false);
+                            var zipEntryStream = zipEntry.Open();
                             await using (zipEntryStream.ConfigureAwait(false))
                             {
                                 var jsonSerializer = new Utf8JsonWriter(zipEntryStream);
@@ -366,7 +366,7 @@ public class BackupService : IBackupService
                 foreach (var item in Directory.EnumerateFiles(_applicationPaths.ConfigurationDirectoryPath, "*.xml", SearchOption.TopDirectoryOnly)
                              .Union(Directory.EnumerateFiles(_applicationPaths.ConfigurationDirectoryPath, "*.json", SearchOption.TopDirectoryOnly)))
                 {
-                    await zipArchive.CreateEntryFromFileAsync(item, NormalizePathSeparator(Path.Combine("Config", Path.GetFileName(item)))).ConfigureAwait(false);
+                    zipArchive.CreateEntryFromFile(item, NormalizePathSeparator(Path.Combine("Config", Path.GetFileName(item))));
                 }
 
                 void CopyDirectory(string source, string target, string filter = "*")
@@ -380,7 +380,6 @@ public class BackupService : IBackupService
 
                     foreach (var item in Directory.EnumerateFiles(source, filter, SearchOption.AllDirectories))
                     {
-                        // TODO: @bond make async
                         zipArchive.CreateEntryFromFile(item, NormalizePathSeparator(Path.Combine(target, Path.GetRelativePath(source, item))));
                     }
                 }
@@ -406,7 +405,7 @@ public class BackupService : IBackupService
                     CopyDirectory(Path.Combine(_applicationPaths.InternalMetadataPath), Path.Combine("Data", "metadata"));
                 }
 
-                var manifestStream = await zipArchive.CreateEntry(ManifestEntryName).OpenAsync().ConfigureAwait(false);
+                var manifestStream = zipArchive.CreateEntry(ManifestEntryName).Open();
                 await using (manifestStream.ConfigureAwait(false))
                 {
                     await JsonSerializer.SerializeAsync(manifestStream, manifest).ConfigureAwait(false);
@@ -506,7 +505,7 @@ public class BackupService : IBackupService
                 return null;
             }
 
-            var manifestStream = await manifestEntry.OpenAsync().ConfigureAwait(false);
+            var manifestStream = manifestEntry.Open();
             await using (manifestStream.ConfigureAwait(false))
             {
                 return await JsonSerializer.DeserializeAsync<BackupManifest>(manifestStream, _serializerSettings).ConfigureAwait(false);
