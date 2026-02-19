@@ -1620,12 +1620,17 @@ namespace MediaBrowser.Controller.Entities
                 return isAllowed;
             }
 
-            if (maxAllowedSubRating is not null)
+            if (!maxAllowedRating.HasValue)
             {
-                return (ratingScore.SubScore ?? 0) <= maxAllowedSubRating && ratingScore.Score <= maxAllowedRating.Value;
+                return true;
             }
 
-            return !maxAllowedRating.HasValue || ratingScore.Score <= maxAllowedRating.Value;
+            if (ratingScore.Score != maxAllowedRating.Value)
+            {
+                return ratingScore.Score < maxAllowedRating.Value;
+            }
+
+            return !maxAllowedSubRating.HasValue || (ratingScore.SubScore ?? 0) <= maxAllowedSubRating.Value;
         }
 
         public ParentalRatingScore GetParentalRatingScore()
@@ -2047,6 +2052,9 @@ namespace MediaBrowser.Controller.Entities
 
         public virtual async Task UpdateToRepositoryAsync(ItemUpdateType updateReason, CancellationToken cancellationToken)
          => await LibraryManager.UpdateItemAsync(this, GetParent(), updateReason, cancellationToken).ConfigureAwait(false);
+
+        public async Task ReattachUserDataAsync(CancellationToken cancellationToken) =>
+            await LibraryManager.ReattachUserDataAsync(this, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Validates that images within the item are still on the filesystem.

@@ -1163,7 +1163,9 @@ internal class MigrateLibraryDb : IDatabaseMigrationRoutine
                 Item = null!,
                 ProviderId = e[0],
                 ProviderValue = string.Join('|', e.Skip(1))
-            }).ToArray();
+            })
+            .DistinctBy(e => e.ProviderId)
+            .ToArray();
         }
 
         if (reader.TryGetString(index++, out var imageInfos))
@@ -1247,8 +1249,11 @@ internal class MigrateLibraryDb : IDatabaseMigrationRoutine
         }
 
         var baseItem = BaseItemRepository.DeserializeBaseItem(entity, _logger, null, false);
-        var dataKeys = baseItem.GetUserDataKeys();
-        userDataKeys.AddRange(dataKeys);
+        if (baseItem is not null)
+        {
+            var dataKeys = baseItem.GetUserDataKeys();
+            userDataKeys.AddRange(dataKeys);
+        }
 
         return (entity, userDataKeys.ToArray());
     }
